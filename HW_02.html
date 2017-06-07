@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>第二週</title>
+<style type="text/css">
+body{
+	font-family:"微軟正黑體";
+}
+.topic{
+	padding:10px 2px 5px;
+	font-size:18px;
+	font-style:italic;
+	font-weight:bold;
+	width:800px;
+	border-bottom:1px #000000 solid;	
+}
+
+.answer{
+	margin-top:5px;	
+	font-size:16px;
+	color:#666;
+	width:800px;
+	padding:10px;
+	border:#CCC 1px solid;
+}
+</style>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+	var random_num = function(M,N){
+		return Math.floor(Math.random()*(N-M+1)+M);
+	}
+	
+	var launch = function(M,N){
+		d3.select("p").text( random_num(M,N) );
+	}
+</script>
+</head>
+
+<body>
+
+<div class="topic">1.做一個啟動函式的按鈕按下後，會跳出一個介於1911~2016之間的數字。</div>
+<div class="answer" id="HW01">
+<p>　</p>
+<input type="button" value="啟動" onclick="launch(1911,2016)" />
+</div>
+<div class="topic">2.使用D3語法加上線譜跟字母與背景</div>
+<div class="answer" id="HW02">
+<script>
+	var x_start = 0;
+	var y_start = 0;
+	var width = 300;
+	var height = 200;
+	var parameter = height/8;
+	//畫布
+	var SVG = d3.select('div[id="HW02"]')
+				.append("svg")
+				.attr({
+					x:x_start,
+					y:y_start,
+					width:width,
+					height:height
+				});
+		//矩形
+		SVG.append("rect")
+			.attr({
+				x:x_start,
+				y:y_start,
+				width:width,
+				height:height,
+				fill:"#FDF5E6"
+			});	
+		//五線譜	
+		for( var i=0; i<5; i++ ){		
+			SVG.append("line")
+				.attr({
+					x1:x_start,
+					y1:y_start+parameter*i+parameter*2,
+					x2:x_start+width,
+					y2:y_start+parameter*i+parameter*2,
+					stroke:"#999",
+					"stroke-width":1
+				});
+		}
+		//音符圓
+		SVG.append("circle")
+			.attr({
+				cx:x_start+width/2,
+				cy:4.5*parameter,
+				r:parameter/2
+			});
+			
+		//音符矩形
+		SVG.append("line")
+			.attr({
+				x1:x_start+(width/2)+(parameter/2)-1,
+				y1:2*parameter,
+				x2:x_start+(width/2)+(parameter/2)-1,
+				y2:4*parameter+(parameter/2),
+				stroke:"black",
+				"stroke-width":2
+			});
+		//加字母
+		SVG.append("text")
+			.attr({
+				x:x_start+(width/2)-(parameter/2),
+				y:y_start+height,
+				"font-size":40
+			})
+			.text("A");
+</script>
+</div>
+
+<div class="topic">3.用迴圈搭配亂數函式產生20條有數值的長條圖</div>
+<div class="answer" id="HW03">
+	<script>
+    //畫布
+	var SVG = d3.select('div[id="HW03"]')
+				.append("svg")
+				.attr({
+					x:0,
+					y:0,
+					width:400,
+					height:600
+				});
+    for( var i=0; i<20; i++ ){
+		var num = random_num(10,300);
+		SVG.append("rect")
+			.attr({
+				x:30,
+				y:20*i+5*i,
+				width:num,
+				height:20,
+				fill:"#96d38c"
+			});	
+		SVG.append("text")
+			.attr({
+				x:0,
+				y:20*i+5*i+15,
+				fill:"#666",
+				"font-style":"italic",
+				"font-size":13
+			})
+			.text('('+(i+1)+')');
+			
+		SVG.append("text")
+			.attr({
+				x:num+35,
+				y:20*i+5*i+15
+			})
+			.text(num);		
+	}
+	
+    </script>
+</div>
+<div class="topic">4.用迴圈搭配亂數函式產生有20筆資料的折線圖</div>
+<div class="answer" id="HW04">
+	<script>
+    //畫布
+	var SVG = d3.select('div[id="HW04"]')
+				.append("svg")
+				.attr({
+					x:0,
+					y:0,
+					width:400,
+					height:300
+				});
+				
+    var points = '0,0 ';
+	for( var i=0; i<20; i++ ){
+		var num = random_num(10,300);
+		points += num+','+12*(i+1)+' ';
+		SVG.append("circle")
+			.attr({
+				cx:num,
+				cy:12*(i+1),
+				r:5,
+				fill:"#e1396c"
+			});
+			
+		SVG.append("text")
+			.attr({
+				x:num+10,
+				y:12*(i+1)+4,
+				"font-size":11
+			})
+			.text(num);	
+	}
+	points +='0,'+12*(i+1);
+	
+	SVG.append("polyline")
+		.attr({
+			points:points,
+			stroke:"black",
+			fill:"rgba(0,0,0,0)", 
+			strokewidth:2
+		});
+	
+    </script>
+</div>
+</body>
+</html>
