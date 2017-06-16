@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>第三週</title>
+<style type="text/css">
+body{
+	font-family:"微軟正黑體";
+}
+.topic{
+	padding:10px 2px 5px;
+	font-size:18px;
+	font-style:italic;
+	font-weight:bold;
+	width:800px;
+	border-bottom:1px #000000 solid;	
+}
+
+.answer{
+	margin-top:5px;	
+	font-size:15px;
+	color:#666;
+	width:800px;
+	padding:10px;
+	border:#CCC 1px solid;
+}
+</style>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="topic">1.製作長條圖2016年年8月且台北市且發票數量量大於10億張的項目。</div>
+<div class="answer" id="HW01">
+	<script>
+        d3.select("div#HW01")
+            .append('svg')
+            .attr({
+                width:500,
+                height:300,
+                id:"SVG01"
+            });
+
+        var SVG = d3.select("#SVG01");
+        
+    	d3.csv('invoice-taipei.csv', mid ,function(data){
+            var fdata = data.filter(function( data ){
+                if( data.amount > 1000000000 && data.cid==='A' && data.date >='2016/8/1' ){
+                    return data;
+                }
+                
+            });	
+            
+            
+            for( var i=0; i< fdata.length; i++ ){
+                SVG.append("rect")
+                    .attr({
+                        x:250,
+                        y:10+25*i,
+                        width:fdata[i].amount/100000000,
+                        height:20,
+                        fill:"#a8d8ea"
+                    });  
+                
+                SVG.append("text")
+                    .attr({
+                        x:0,
+                        y:27+25*i    
+                    })
+                    .text(fdata[i].industry);
+                
+                SVG.append("text")
+                    .attr({
+                        x:250+fdata[i].amount/100000000,
+                        y:27+25*i    
+                    })
+                    .text((fdata[i].amount/100000000).toFixed(1))
+            }
+		});
+		
+		
+		var mid = function( data ){
+            data.amount = +data.amount;
+            data.number = +data.number;                    
+        };
+    </script>
+</div>
+<div class="topic">2.把數字小於70改紅色</div>
+<div class="answer" id="HW02">
+    <script>
+        var arr = [85, 60, 99, 49, 77, 82];
+    
+        bind(arr);
+        render();
+        
+        function bind( data ){
+            var selection = d3.select("#HW02")
+                                .selectAll("div")
+                                .data(data);
+            selection.enter().append("div");
+            selection.exit().remove();
+        }
+        
+        function render(){
+            d3.select("#HW02")
+                .selectAll("div")
+                .text(function(data,i){
+                    return (i+1)+"："+data;
+                }).style({
+                    color:function( data ){
+                        if( data < 70 ){
+                            return "#cf4647";
+                        }else{
+                            return "#2a363b";
+                        }
+                    }
+                });    
+        }
+        
+        
+    </script>
+</div>
+
+<div class="topic">3.建立簡單動態圖表，按鈕新增／刪除</div>
+<div class="answer" id="HW03">
+    <script>
+        var arr = [85, 60, 99, 49, 77, 82];
+        var p = 30;
+        var w = 400;
+        var h = 300;
+        
+        svg();
+        bind(arr);
+        render();
+
+        //畫布
+        function svg(){
+            d3.select("#HW03")
+                .append('svg')
+                .attr({
+                    width:400,
+                    height:300,
+                    id:"SVG03"
+                });    
+        }
+        
+        function bind( data ){
+            var selection_rect = d3.select("#SVG03")
+                                .selectAll("rect")
+                                .data(data);
+            
+            var selection_text = d3.select("#SVG03")
+                                .selectAll("text")
+                                .data(data);
+               
+            selection_rect.enter().append("rect");
+            selection_rect.exit().remove();
+            selection_text.enter().append("text");
+            selection_text.exit().remove();
+        }
+    
+        function render(){
+            var SVG = d3.select("#SVG03");
+                SVG.selectAll("rect")
+                    .attr({
+                        x:function(d,i){
+                            return p+45*i;
+                        },
+                        y:function(d,i){
+                            return h-d;
+                        },
+                        width:function(d,i){
+                            return 40;
+                        },                
+                        height:function(d,i){
+                            return d;    
+                        },
+                        fill:function(d,i){
+                            if( d < 70 ){
+                                return "#e1396c";
+                            }else{
+                                return "#96d38c";
+                            }    
+                        }
+                    });
+                
+                d3.select("#SVG03")
+                    .selectAll("text")
+                    .text(function( d,i ){
+                          return d;               
+                    })
+                    .attr({
+                        x:function(d,i){
+                            return p+45*i+10;
+                        },
+                        y:function(d,i){
+                            return h-d-10;
+                        }
+                    });
+        }
+        
+        function add(){
+            arr.push(randon_num(0,100));
+            bind(arr);
+            render();
+            console.log(arr);
+        }
+        
+        function del(){
+            arr.shift();
+            bind(arr);
+            render();
+            console.log(arr);
+        }
+        
+        function randon_num(M,N){
+            var rScale = d3.scale.linear()
+                            .domain([0,1])
+                            .rangeRound([M,N]);
+            return rScale(Math.random());
+        }  
+    </script>
+    <div style="width:400px;text-align:center; padding-top:10px;">
+    <input type="button" value="新增1筆" onclick="add()">　
+    <input type="button" value="移除1筆" onclick="del()">
+    </div>
+</div>
+<div class="topic">4.試著用ordinal()秀出各政黨顏色</div>
+<div class="answer" id="HW04">
+    <script>
+        var party_name = ["中國國民黨","民主進步黨","時代力力量","無黨團結聯聯盟","親民黨"];
+        var color = ["blue", "green", "goldenrod", "gray", "orange"];
+        var xScale = d3.scale.ordinal().domain(party_name).range(color);
+
+        for( var i=0; i< party_name.length; i++ ){
+            d3.select("#HW04")
+                .append("text")
+                .text(party_name[i]+'　')
+                .style({
+                    color:xScale([party_name[i]])
+                }); 
+            console.log(xScale[i]);
+        }
+        
+        
+    </script>
+</div>
+</body>
+</html>
