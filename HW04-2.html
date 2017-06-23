@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>第四週</title>
+<style type="text/css">
+body{
+	font-family:"微軟正黑體";
+}
+.topic{
+	padding:10px 2px 5px;
+	font-size:18px;
+	font-style:italic;
+	font-weight:bold;
+	width:1000px;
+	border-bottom:1px #000000 solid;	
+}
+
+.answer{
+	margin-top:5px;	
+	font-size:15px;
+	color:#666;
+	width:1000px;
+	padding:10px;
+	border:#CCC 1px solid;
+}
+.axis line,.axis path{
+    fill:none;
+    stroke:#999;
+}   
+.axis text{
+    font-size: 11px;
+    fill: blue;
+}   
+#tooltip{
+  position: relative;
+  /* left: 20px; */
+  /* top:  100px; */
+  background: #CCC;
+  width: 150px;
+  height: auto;
+  padding: 0px 10px;
+  border-radius: 5px;
+  box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
+}
+ #tooltip.hidden{
+  display: none;
+}     
+</style>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="topic">3.依樣畫葫蘆台灣癌症發生統計資料</div>
+<div class="answer" id="HW03">
+    <div id="tooltip" class="hidden">
+      <p><strong id="city">Hello</strong></p>
+      <p id="category">tooltip</p>
+    </div>   
+   
+    <script>
+        d3.select("#HW03")
+            .append("div")
+            .attr("id","select_list")
+            .style({"padding-left":"60px"});
+        
+        // 1. 定義width, height, padding, letterList變數
+        var w = 900;
+        var h = 600;
+        var p = 60;
+        
+        //2. 建立svg()畫布環境
+        svg();       
+        
+        //3. 用d3讀取csv
+        var csv = d3.dsv(",", "text/csv;charset=big5");  
+        csv("cancer_data.csv",mid, function(dataSet){
+           bind(dataSet);
+           render(dataSet);
+           btnList(dataSet);
+        });
+        
+        function mid(d){
+            d.avg_age = +d.avg_age;
+            d.count = +d.count;
+            return d;
+        }
+        
+        
+        function svg(){
+           d3.select("#HW03").append("svg").attr({
+                width:w,
+                height:h,
+                id:"svg03"
+           });
+            d3.select("#svg03").append("g").append("rect").attr({
+                width: "100%",
+                height: "100%",
+                fill: "white"
+            });
+            d3.select("#svg03").append("g").attr("id","axisX");
+            d3.select("#svg03").append("g").attr("id","axisY");
+        }
+        
+        //4. 建立bind()
+
+        function bind(dataSet){
+            var selection = d3.select("#svg03")
+                                .selectAll("circle")
+                                .data(dataSet);
+            
+            selection.enter().append("circle");
+            selection.exit().remove();
+        }
+        
+        function render(dataSet){
+            //5. 定義xScale,yScale,rScale, fScale比例尺(range目的在決定在svg上位置)
+
+           var xScale = d3.time.scale()
+                    .domain([new Date("1979-01-01"),
+                             new Date("2013-01-01")
+                            ])
+                    .range([p,w-p]);
+           var yScale = d3.scale.linear()
+                    .domain([0,d3.max(dataSet,function(d){ 
+                                    return d.avg_age})])
+                    .range([h-p,p]);
+           var rScale = d3.scale.linear()
+                    .domain([d3.min(dataSet,function(d){ 
+                        return d.count}),
+                             d3.max(dataSet,function(d){ 
+                        return d.count})])
+                    .range([5,30]);
+           var fScale = d3.scale.category20();
+            
+            //7.加坐標
+            var xAxis = d3.svg.axis()
+                            .scale(xScale)
+                            .orient("bottom")
+                            .ticks(12);
+            d3.select('g#axisX')
+                .attr("class","axis")
+                .attr("transform","translate(0,"+(h-p+15)+")")
+                .call(xAxis);
+            
+          var yAxis = d3.svg.axis()
+                            .scale(yScale)
+                            .orient("left")
+                            .tickFormat(function(d){
+                                return d/1000000+"M";
+                            });
+            d3.select('g#axisY')
+                .attr("class","axis")
+                .attr("transform","translate("+(p-15)+",0)")
+                .call(yAxis);
+            
+            //6. 建立render()繪圖
+            d3.selectAll("circle")
+              .attr({
+                cx:function(d){
+                    return xScale(new Date(d.date));
+                },
+                cy:function(d){
+                    return yScale(d.avg_age);
+                },
+                r:function(d){
+                    return rScale(d.count);
+                },
+                fill:function(d){
+                    return fScale(d.city);    
+                }
+              })
+            .on("mouseover",function( d ){
+                //console.log(d3.select(this).attr("cy"));
+                d3.select("#city").text(d.city);
+                d3.select("#category").text(d.category);
+                var tooltip = d3.select("#tooltip")
+                            .style({
+                                left:+d3.select(this).attr("cx")+"px",
+                                top:+d3.select(this).attr("cy")+30+"px"
+                            });
+                tooltip.classed("hidden",false); 
+            })
+            .on("mouseout",function(){
+                d3.select("#tooltip").classed("hidden",false);     
+            });            
+        }
+        
+        function btnList( dataSet ){
+            var industryArr = dataSet.map(function(d){
+                                return d.category;    
+                            });
+            var unIndustryArr = unique(industryArr);
+            fIndustryArr = unIndustryArr.filter(function(d){
+                return d!="";    
+            })
+            
+            var section = d3.select("#select_list")
+                            .append("select")
+                            .selectAll("option")
+                            .data(fIndustryArr);
+            
+            section.enter().append("option")
+                .attr({
+                    value:function(d){
+                        return d;
+                    }
+                }).text(function(d){
+                    return d;
+            });
+            section.exit().remove();
+            
+            d3.select("select")
+                .insert("option",":first-child")
+                .attr("value","顯示全部")
+                .property("selected",true)
+                .text("顯示全部");
+            
+           d3.select("select").on("change",function(){
+               var value = d3.select("select").property("value");
+               //console.log(value);
+               update( value );
+           });
+            
+            
+            function update( name ){
+                var newDataSet = dataSet.filter(function(d){
+                    if( name === '顯示全部'){
+                        return d.category;
+                    }else{
+                        return d.category === name;
+                    }
+                });
+                bind(newDataSet);
+                render(newDataSet);
+            }
+            
+        }
+                                          
+        function unique(array){
+          var n = []; 
+          for( var i=0; i<array.length; i++ ){
+                if( n.indexOf(array[i]) < 0 ){
+                    n.push(array[i]); 
+                }
+          }
+          return n;
+        }
+        
+        
+    </script>
+</div>
+
+<div class="topic">4.按下: 播放動畫、在右邊按會返回</div>
+<div class="answer" id="HW04">
+<a href="HW04-3.html" target="_blank">點我</a> </div>
+</body>
+</html>
