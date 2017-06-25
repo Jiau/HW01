@@ -1,0 +1,465 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Untitled Document</title>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+</head>
+<style type="text/css">
+    body{
+        font-family: "微軟正黑體";
+    }
+    .axis line,.axis path{
+        fill:none;
+        stroke:#999;
+    }   
+    .axis text{
+        font-size: 11px;
+        fill: #eee;
+    }  
+    
+    .Grid text{
+        display: none;
+    }
+    .Grid line,.Grid path{
+        fill:none;
+        stroke:#999;
+        opacity: 0.2;
+        stroke-dasharray: 5,5;
+    }   
+    
+    .town_bar{
+        cursor: pointer;
+    }
+    
+    .title{
+        width: 1200px;
+        text-align: center;
+        font-size: 20px;
+        padding: 5px;
+    }
+    
+    #tooltip{
+      position: absolute;
+      background: #fff;
+      width: 150px;
+      height: auto;
+      padding: 0px 10px;
+      border-radius: 5px;
+      box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
+    }
+     #tooltip.hidden{
+      display: none;
+    } 
+    .crown{
+        display: none;
+        position: absolute;
+        transform:rotate(-10deg);
+    }
+</style>
+<body>
+
+<div id="tooltip" class="hidden">
+  <p><strong id="city">Hello</strong></p>
+  <p id="content">tooltip</p>
+</div>
+<div class="crown">
+   <img src="crown.svg" width="50"/>
+</div>
+
+<script>
+    //income_middle  平均中位數
+    //income_avg     平均數
+    //town           區
+    //village        里
+    //產生畫布
+    var w = 1200;
+    var h = 500;
+    var p = 60;
+    var yScale;
+    var bar_width_s;
+    var this_bar;
+    var max_num = 0;
+    d3.select("body").insert("div").attr("class","title").html("102年綜合所得稅各縣市申報統計表-台北市");
+    svg();
+
+    var csv = d3.dsv(",", "text/csv;charset=big5");
+    csv("taipei_income.csv",mid,function(data){
+        //找出最大值,比例尺要用
+        max_num = d3.max(data,function(d){ return d.income_middle; });
+        //資料巢狀化
+        var nested = function_nested(data);
+
+        //資料挷定
+        bind_town(nested.total.values);
+        
+        //繪圖
+        render(nested.total.values);
+        
+        var bar_width = Math.round((w-(2*p))/nested.total.values.length);
+        bar_width_s = 10;
+        var inside = 'N';
+ 
+        
+        //點圖看裡面的圖    
+        d3.select("#svg01").selectAll('rect.town_bar').on("click",function(e,i){
+            d3.select("#tooltip").classed("hidden",true);
+            d3.selectAll("text.town_text").style("display","none");    
+                d3.selectAll("div.crown").style("display","none");
+
+            if(inside==='N'){
+                this_bar = i;
+                d3.select("#svg01").selectAll("rect.village_bar").style({"display":""});
+            }else{  //裡面的圖隱藏
+                d3.select("#svg01").selectAll("rect.village_bar").style({"display":"none"});
+                d3.selectAll("text.town_text").style("display","");    
+                d3.selectAll("div.crown").style("display","block");
+            }
+            d3.select("#svg01").selectAll('rect')
+                .attr({
+                    x:function(e,i){
+                        if(inside=='N'){ //看裡面
+                            return i*bar_width+p;   
+                        }else{      
+                            if( i<=this_bar ){
+                                return i*bar_width_s+p;   
+                            }else{
+                                return w-((nested.total.values.length-i)*10)-p; 
+                            }        
+                        }
+                    },
+                    width:function(e){
+                            if(inside=='N'){ //看裡面
+                                return bar_width-5;
+                            }else{
+                                return bar_width_s-2;
+                            }
+                        }
+                }).transition()
+                .attr({
+                    x:function(e,i){
+                        if(inside=='N'){ //看裡面
+                            if( i<=this_bar ){
+                                return i*bar_width_s+p;   
+                            }else{
+                                return w-((nested.total.values.length-i)*10)-p; 
+                            }
+                        }else{
+                            return i*bar_width+p;    
+                        }
+                        
+                    },
+                    width:function(){
+                        if(inside=='N'){ //看裡面
+                            return bar_width_s-2;
+                        }else{
+                            return bar_width-5;
+                        }
+                    },
+                    fill:function(){
+                        if(inside=='N'){ //看裡面
+                            return '#DDDDDD';
+                        }else{
+                            return '#85c8dd';
+                        }
+                    }
+                });
+            
+            if(inside=='N'){ //看裡面
+                for( var i=0; i< nested.list.length; i++ ){
+                    if( nested.list[i].key === e.town ){
+                        var tmp = nested.list[i].values;
+                    }
+                }
+                var village_data = tmp.sort(function(a, b){
+                    return d3.descending(a.income_middle, b.income_middle);
+                });
+                village_data.length = 10;
+                bind_village( village_data );
+                render_village( village_data );
+                
+                
+                //看字===
+                 d3.select("#svg01").selectAll('rect.village_bar').on("mouseover",function(e,i){
+                    
+                    //顯示字
+                    if(inside=='Y'){ //看裡面
+                        var posX = +d3.select(this).attr("x")+20;
+                        var posY = +d3.select(this).attr("y")+20;
+                        var tooltip = d3.select("#tooltip")
+                                        .style({
+                                            left:posX+"px",
+                                            top:posY+"px"
+                                        });
+                        tooltip.select("#city").text(function(){
+                           return e.town+" : "+e.village; 
+                        });
+
+                        tooltip.select("#content").text(function(){
+                           return e.income_middle+"(千元)"; 
+                        });
+                        tooltip.classed("hidden",false); 
+
+                    }
+                })
+                .on("mouseout",function(){
+                    d3.select("#tooltip").classed("hidden",true);
+                });            
+
+                //=====
+                
+            }
+            
+            if( inside==='N'){
+                inside = 'Y';
+            }else{
+                inside ='N';
+            }
+            
+            });
+        
+        
+            d3.select("#svg01").selectAll('rect.town_bar').on("mouseover",function(e,i){
+                //顯示字
+                if(inside=='N'){ //看裡面
+                    var posX = +d3.select(this).attr("x")+20;
+                    var posY = +d3.select(this).attr("y")+20;
+                    //console.log(e);
+                    var tooltip = d3.select("#tooltip")
+                                    .style({
+                                        left:posX+"px",
+                                        top:posY+"px"
+                                    });
+                    tooltip.select("#city").text(function(){
+                       return e.town; 
+                    });
+
+                    tooltip.select("#content").text(function(){
+                       return e.income_middle+"(千元)"; 
+                    });
+                    tooltip.classed("hidden",false); 
+
+                }else{
+
+                }
+            }).on("mouseout",function(){
+                    d3.select("#tooltip").classed("hidden",true);
+            });            
+
+        });
+    
+        
+    
+    //function們
+    //畫布
+    function svg(id){
+        d3.select("body")
+            .append("div")
+            .append("svg")
+            .attr({
+                width:w,
+                height:h,
+                id:'svg01'
+            });
+        //d3.select("#"+id).append("g").attr("id","axisX");
+        //d3.select("#"+id).append("g").attr("id","axisY");
+    }
+    //處理資料轉成數字
+    function mid(d){
+        for( key in d ){
+            if( key!='town' && key!='village'){
+                d[key] = +d[key];
+            }
+        }
+        return d;
+    }
+    //資料巢狀化
+    function function_nested( data ){
+        var tmp =d3.nest()
+                        .key(function(d){
+                            if( d.village!='合　計' && d.village!='其　他' ){
+                                return d.town;
+                            }else{
+                                if( d.village==='合　計' )    return '合　計';
+                                if( d.village==='其　他' )    return '其　他';
+                            }
+                        })
+                        .entries(data);
+        
+        var nested={};
+        nested['list'] = [];
+        for( var i=0; i< tmp.length; i++ ){
+            switch(tmp[i].key){
+                case '合　計':
+                    nested["total"] = tmp[i];
+                    break;
+                    
+                case '其　他':
+                    nested["other"] = tmp[i];   
+                    break;
+                
+                default:
+                    nested['list'].push(tmp[i]);   
+                    break;
+            }
+            
+        }
+        nested.total.values = nested.total.values.sort(function(a, b){
+            return d3.descending(a.income_middle, b.income_middle);
+        });       
+
+        return nested;
+    }
+    //資料挷定
+    function bind_town( data ){
+        var section = d3.select("#svg01")
+                        .selectAll("rect.town_bar")
+                        .data(data);
+        section.enter().append("rect").attr("class","town_bar");
+        section.exit().remove();
+        
+        var section = d3.select("#svg01")
+                        .selectAll("text.town_text")
+                        .data(data);
+        section.enter().append("text").attr("class","town_text");
+        section.exit().remove();
+        
+    }
+    
+    //繪圖
+    function render(data){
+        //比例尺設定
+        yScale = d3.scale.linear()
+                    .domain([0,max_num])
+                    .range([p,h-2*p]);
+
+        var tmp_yScale = d3.scale.linear()
+                    .domain([max_num,0])
+                    .range([p,h-2*p]);
+        
+        var yAxis = d3.svg.axis()
+                            .scale(tmp_yScale)
+                            .orient("left");
+
+        //產生比例尺
+        d3.select('#svg01').append("g")
+            .attr("class","axis")
+            .attr("transform","translate("+(p)+","+p+")")
+            .call(yAxis);
+
+        var axisYGrid = d3.svg.axis()
+                            .scale(tmp_yScale)
+                            .orient("right").tickSize(w-2*p,0);
+
+        //產生比例尺
+        d3.select('#svg01').append("g")
+            .attr("class","axis")
+            .attr("transform","translate("+(p)+","+p+")")
+            .call(yAxis);
+        
+        d3.select('#svg01').append("g")
+            .attr("class","Grid")
+            .attr("transform","translate("+(p)+","+p+")")
+            .call(axisYGrid);
+
+        
+        
+        var bar_width = Math.round((w-(2*p))/data.length);
+        d3.select("#svg01").selectAll("rect.town_bar")
+            .attr({
+                x:function(d,i){
+                    return i*bar_width+p;
+                },
+                y:function(d){
+                    return h-p;
+                },
+                width:bar_width-5,
+                height:function(d){
+                    return 0;
+                },
+                fill:"#85c8dd"
+            })
+            .transition()
+            .duration(2000)
+            .attr({
+                y:function(d){
+                    return h-yScale(d.income_middle);
+                },
+                height:function(d){
+                    //console.log(yScale(d.income_middle)+" : "+d.income_middle);
+                    return yScale(d.income_middle)-p;
+                }
+            });
+        
+        d3.select("#svg01")
+            .selectAll("text.town_text").transition().delay(2500)
+            .attr({
+                x:function(d,i){
+                    return i*bar_width+p+20;
+                },
+                y:function(d){
+                    return h-p+15;
+                }
+            })
+            .text(function(d){
+                return d.town;
+            });  
+        d3.selectAll("div.crown").transition().delay(2500)
+            .style({
+                top:yScale(data[0]["income_middle"])-p+"px",
+                left:(bar_width)-5+"px",
+                display:"block"
+            });
+    }
+    
+    //里的圖表======================================================================
+    //挷定里的資料
+    function bind_village( data ){
+        var section = d3.select("#svg01").selectAll('rect.village_bar').data(data);
+        section.enter().append("rect").attr("class","village_bar");
+        section.exit().remove();
+
+        var section = d3.select("#svg01")
+                        .selectAll("text.village_text")
+                        .data(data);
+        section.enter().append("text").attr("class","village_text");
+        section.exit().remove();
+
+    }
+
+    //繪圖
+    function render_village(data){
+        var bar_width = Math.round((w-(4*p)-bar_width_s*12)/data.length);
+        d3.select("#svg01").selectAll("rect.village_bar")
+            .attr({
+                x:function(d,i){
+                    return ((this_bar+1)*bar_width_s)+(i*bar_width)+2*p;
+                },
+                y:function(d){
+                    return h-p;
+                },
+                width:bar_width-5,
+                height:function(d){
+                    return 0;
+                },
+                fill:"#f1684e"
+            })
+            .transition()
+            .duration(2000)
+            .attr({
+                y:function(d){
+                    return h-yScale(d.income_middle);
+                },
+                height:function(d){
+                    return yScale(d.income_middle)-p;
+                }
+            });
+
+    }
+    
+    
+</script>
+
+
+</body>
+</html>
