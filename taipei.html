@@ -105,14 +105,16 @@
         d3.select("#svg01").selectAll('rect.town_bar').on("click",function(e,i){
             d3.select("#tooltip").classed("hidden",true);
             d3.selectAll("text.town_text").style("display","none");    
-                d3.selectAll("div.crown").style("display","none");
+            d3.selectAll("text.village_text").style("display","");    
+            d3.selectAll("div.crown").style("display","none");
 
             if(inside==='N'){
                 this_bar = i;
                 d3.select("#svg01").selectAll("rect.village_bar").style({"display":""});
             }else{  //裡面的圖隱藏
                 d3.select("#svg01").selectAll("rect.village_bar").style({"display":"none"});
-                d3.selectAll("text.town_text").style("display","");    
+                d3.selectAll("text.town_text").style("display",""); 
+                d3.selectAll("text.village_text").style("display","none");    
                 d3.selectAll("div.crown").style("display","block");
             }
             d3.select("#svg01").selectAll('rect')
@@ -184,8 +186,8 @@
                     
                     //顯示字
                     if(inside=='Y'){ //看裡面
-                        var posX = +d3.select(this).attr("x")+20;
-                        var posY = +d3.select(this).attr("y")+20;
+                        var posX = d3.mouse(this)[0]+20;
+                        var posY = d3.mouse(this)[1]+20;
                         var tooltip = d3.select("#tooltip")
                                         .style({
                                             left:posX+"px",
@@ -222,9 +224,9 @@
             d3.select("#svg01").selectAll('rect.town_bar').on("mouseover",function(e,i){
                 //顯示字
                 if(inside=='N'){ //看裡面
-                    var posX = +d3.select(this).attr("x")+20;
-                    var posY = +d3.select(this).attr("y")+20;
-                    //console.log(e);
+                    var posX = d3.mouse(this)[0]+20;
+                    var posY = d3.mouse(this)[1]+20;
+                    //console.log();
                     var tooltip = d3.select("#tooltip")
                                     .style({
                                         left:posX+"px",
@@ -454,6 +456,21 @@
                     return yScale(d.income_middle)-p;
                 }
             });
+        
+        d3.select("#svg01")
+            .selectAll("text.village_text")
+            .attr({
+                x:function(d,i){
+                    return ((this_bar+1)*bar_width_s)+i*bar_width+2*p+20;
+                },
+                y:function(d){
+                    return h-p+15;
+                }
+            })
+            .text(function(d){
+                return d.village;
+            });  
+
 
     }
     
