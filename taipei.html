@@ -56,6 +56,9 @@
         position: absolute;
         transform:rotate(-10deg);
     }
+    .village_text{
+        font-size: 11px;
+    }
 </style>
 <body>
 
@@ -176,7 +179,7 @@
                 var village_data = tmp.sort(function(a, b){
                     return d3.descending(a.income_middle, b.income_middle);
                 });
-                village_data.length = 10;
+                village_data.length = 20;
                 bind_village( village_data );
                 render_village( village_data );
                 
@@ -461,7 +464,7 @@
             .selectAll("text.village_text")
             .attr({
                 x:function(d,i){
-                    return ((this_bar+1)*bar_width_s)+i*bar_width+2*p+20;
+                    return ((this_bar+1)*bar_width_s)+i*bar_width+2*p;
                 },
                 y:function(d){
                     return h-p+15;
